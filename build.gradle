@@ -1,0 +1,22 @@
+group 'db-dumper'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'groovy'
+apply plugin: 'application'
+apply plugin: 'java'
+
+sourceCompatibility = 1.5
+
+mainClassName='cz.edee11.dbdumper.DbDumper'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.4.7:indy'
+    compile 'org.postgresql:postgresql:9.4.1209'
+    compile 'commons-cli:commons-cli:1.4'
+
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}

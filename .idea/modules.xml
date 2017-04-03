@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/db-dumper.iml" filepath="$PROJECT_DIR$/.idea/modules/db-dumper.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/db-dumper_main.iml" filepath="$PROJECT_DIR$/.idea/modules/db-dumper_main.iml" group="db-dumper" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/db-dumper_test.iml" filepath="$PROJECT_DIR$/.idea/modules/db-dumper_test.iml" group="db-dumper" />
+    </modules>
+  </component>
+</project>
