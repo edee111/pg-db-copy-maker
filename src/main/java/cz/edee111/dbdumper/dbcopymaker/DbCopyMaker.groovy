@@ -1,47 +1,22 @@
-package cz.edee111.dbdumper
+package cz.edee111.dbdumper.dbcopymaker
 
-import cz.edee111.dbdumper.dbcopymaker.DbConnectionDetails
 import groovy.sql.GroovyResultSet
 import groovy.sql.GroovyResultSetExtension
 import groovy.sql.Sql
 
 import java.sql.ResultSet
 
-class DbDumper {
+class DbCopyMaker {
 
-  @SuppressWarnings("GroovyUnusedDeclaration")
-  private static final DbConnectionDetails dbSrc = new DbConnectionDetails(
-      username: "",
-      password: "",
-      host: "localhost",
-      port: "25432",
-      dbName: ""
-  )
-
-  @SuppressWarnings("GroovyUnusedDeclaration")
-  private static final DbConnectionDetails dbDst = new DbConnectionDetails(
-      username: DB_USER,
-      password: "masterkey",
-      host: "localhost",
-      port: "5432",
-      dbName: ""
-  )
-
-  private static String DB_USER = ""
-  private static boolean MAKE_PAUSE = true
-  private static int MAKE_PAUSE_SECONDS_VARIABLITY = 17
-  private static int MAKE_PAUSE_SECONDS_FIXED = 9
-
-  private static long TABLE_SIZE_LIMIT = 12000000
-  private static String START_FROM_TABLE_NAME = null //"aggregation_product"
-  private static String PROCESS_SINGLE_TABLE_NAME = null;
+  Config config
 
   Sql sqlSrc
   Sql sqlDst
 
-  void run () {
+  void run(Config config) {
+    this.config = config
     try {
-      prepareDbConnections(dbSrc, dbDst)
+      prepareDbConnections(config.dbSrc, config.dbDst)
       copyData()
     }
     finally {
@@ -51,7 +26,7 @@ class DbDumper {
 
   void copyData() {
     sqlDst.withTransaction {
-      def schemas = new GroovyResultSetExtension(sqlSrc.connection.metaData.getSchemas(null, ''))
+      def schemas = new GroovyResultSetExtension(sqlSrc.connection.metaData.getSchemas(null, config.schemaPattern))
       schemas.eachRow { schema ->
         //noinspection GroovyAssignabilityCheck
         copySchema(schema.table_schem)
@@ -60,8 +35,8 @@ class DbDumper {
   }
 
   void copySchema(String schema) {
-    if (PROCESS_SINGLE_TABLE_NAME != null) {
-      copyTable(schema, PROCESS_SINGLE_TABLE_NAME);
+    if (config.processSingleTableName != null) {
+      copyTable(schema, config.processSingleTableName)
     }
     else {
       def tables = new GroovyResultSetExtension(sqlSrc.connection.metaData.getTables(null, schema, '%', 'TABLE'))
@@ -76,7 +51,7 @@ class DbDumper {
   private static boolean doReallyCopy = false
 
   void copyTable(String schema, String table) {
-    if (!START_FROM_TABLE_NAME || START_FROM_TABLE_NAME == table) {
+    if (!config.startFromTableName || config.startFromTableName == table) {
       doReallyCopy = true
     }
     if (!doReallyCopy) {
@@ -124,8 +99,8 @@ class DbDumper {
     def rowCount = sqlSrc.firstRow("SELECT COUNT(*) as ROW_COUNT FROM " + schema + '.' + table).get('ROW_COUNT') as Integer
     if (columnNames.contains("id")) {
       println "Original row count in table ${schema}.${table}: ${rowCount}."
-      if (rowCount > TABLE_SIZE_LIMIT) {
-        rowCount = TABLE_SIZE_LIMIT
+      if (rowCount > config.tableSizeLimit) {
+        rowCount = config.tableSizeLimit
         println "Setting row count for table ${schema}.${table} to ${rowCount}."
       }
     }
@@ -135,7 +110,7 @@ class DbDumper {
     List<String> values = []
     String columnNamesStr = prepareColumnNamesStr(columnNames)
 
-    sqlSrc.eachRow("SELECT * FROM ${schema}.${table} ${ columnNames.contains('id') ? "ORDER BY id DESC LIMIT ${TABLE_SIZE_LIMIT}" : ""} " as String) { GroovyResultSet row ->
+    sqlSrc.eachRow("SELECT * FROM ${schema}.${table} ${columnNames.contains('id') ? "ORDER BY id DESC LIMIT ${rowCount}" : ""} " as String) { GroovyResultSet row ->
       values << prepareValues(row, columnNames)
 
       if (i % 1000 == 0) {
@@ -203,13 +178,13 @@ class DbDumper {
     }
   }
 
-  static void makePause() {
-    if (!MAKE_PAUSE) {
+  void makePause() {
+    if (!config.makePause) {
       return
     }
     Random random = new Random()
-    def variableRandomPart = random.nextInt(MAKE_PAUSE_SECONDS_VARIABLITY)
-    def sleepTime = (MAKE_PAUSE_SECONDS_FIXED + variableRandomPart) * 1000 as Long
+    def variableRandomPart = random.nextInt(config.makePauseVariabilitySeconds)
+    def sleepTime = (config.makePauseFixedSeconds + variableRandomPart) * 1000 as Long
     println 'Sleeping for ' + sleepTime + ' ms'
     sleep(sleepTime)
   }
@@ -235,7 +210,4 @@ class DbDumper {
     }
   }
 
-  static void main(String[] args) {
-    new DbDumper().run()
-  }
 }
