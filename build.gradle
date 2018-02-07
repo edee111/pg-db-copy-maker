@@ -1,4 +1,4 @@
-group 'db-dumper'
+group 'db-copy-maker'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'groovy'
