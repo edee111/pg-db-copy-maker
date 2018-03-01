@@ -1,7 +1,5 @@
 package cz.edee111.dbdumper.dbcopymaker
 
-import cz.edee111.dbdumper.DbCopyMaker
-
 /**
  * @author Eduard Tomek
  */
